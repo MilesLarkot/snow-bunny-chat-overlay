@@ -24,11 +24,6 @@
         max-width: 600px;
         animation: fadein 0.3s ease;
       }
-      .badge-icon {
-        height: 18px;
-        vertical-align: middle;
-        margin-right: 4px;
-      }
       @keyframes fadein {
         from {
           opacity: 0;
@@ -48,49 +43,14 @@
     <script>
       const params = new URLSearchParams(window.location.search);
       const CHANNEL_NAME = params.get("name");
-      const USER_ID = params.get("id");
 
-      if (!CHANNEL_NAME || !USER_ID) {
+      if (!CHANNEL_NAME) {
         document.body.innerHTML =
-          '<h2 style="color:white;padding:20px;">Missing ?name= and/or ?id= in URL</h2>';
-        throw new Error("Missing channel name or user ID");
+          '<h2 style="color:white;padding:20px;">Missing ?name= in URL</h2>';
+        throw new Error("Missing channel name");
       }
 
       const chat = document.getElementById("chat");
-      const badgeCache = {};
-
-      async function loadBadges(channelId) {
-        const [globalRes, channelRes] = await Promise.all([
-          fetch("https://badges.twitch.tv/v1/badges/global/display"),
-          fetch(
-            `https://badges.twitch.tv/v1/badges/channels/${channelId}/display`
-          ),
-        ]);
-
-        const globalBadges = await globalRes.json();
-        const channelBadges = await channelRes.json();
-
-        badgeCache.global = globalBadges.badge_sets;
-        badgeCache.channel = channelBadges.badge_sets;
-      }
-
-      function getBadgeURL(name, version) {
-        return (
-          badgeCache.channel?.[name]?.versions?.[version]?.image_url_1x ||
-          badgeCache.global?.[name]?.versions?.[version]?.image_url_1x ||
-          ""
-        );
-      }
-
-      function parseBadges(badges) {
-        if (!badges) return "";
-        return Object.entries(badges)
-          .map(([name, version]) => {
-            const url = getBadgeURL(name, version);
-            return url ? `<img src="${url}" class="badge-icon">` : "";
-          })
-          .join("");
-      }
 
       function startChat(channelName) {
         const client = new tmi.Client({
@@ -106,9 +66,8 @@
           const el = document.createElement("div");
           el.classList.add("msg");
 
-          const badges = parseBadges(tags.badges);
           const displayName = tags["display-name"] || tags["username"];
-          el.innerHTML = `${badges}<strong>${displayName}:</strong> ${message}`;
+          el.innerHTML = `<strong>${displayName}:</strong> ${message}`;
           chat.appendChild(el);
 
           if (chat.children.length > 30) {
@@ -117,10 +76,7 @@
         });
       }
 
-      (async () => {
-        await loadBadges(USER_ID);
-        startChat(CHANNEL_NAME);
-      })();
+      startChat(CHANNEL_NAME);
     </script>
   </body>
 </html>
